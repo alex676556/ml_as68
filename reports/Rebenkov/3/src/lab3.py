@@ -16,19 +16,20 @@ df = pd.read_csv(csv_path)
 X = df.drop(columns=['target'])
 y = df['target']
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
 X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.3, random_state=42, stratify=y
+    X, y, test_size=0.3, random_state=42, stratify=y
 )
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
 best_k = 1
 best_knn_acc = 0
 for k in range(1, 15):
     knn = KNeighborsClassifier(n_neighbors=k)
-    knn.fit(X_train, y_train)
-    acc = knn.score(X_test, y_test)
+    knn.fit(X_train_scaled, y_train)
+    acc = knn.score(X_test_scaled, y_test)
     if acc > best_knn_acc:
         best_knn_acc = acc
         best_k = k
@@ -41,8 +42,8 @@ models = {
 
 results = {}
 for name, model in models.items():
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    model.fit(X_train_scaled, y_train)
+    y_pred = model.predict(X_test_scaled)
     acc = accuracy_score(y_test, y_pred)
     results[name] = (model, acc, y_pred)
     print(f"{name}: Accuracy = {acc:.4f}")
@@ -51,7 +52,7 @@ best_model_name = max(results, key=lambda name: results[name][1])
 best_model, _, y_best_pred = results[best_model_name]
 
 pca = PCA(n_components=2, random_state=42)
-X_test_pca = pca.fit_transform(X_test)
+X_test_pca = pca.fit_transform(X_test_scaled)
 
 plt.figure(figsize=(8, 6))
 scatter = plt.scatter(X_test_pca[:, 0], X_test_pca[:, 1], c=y_best_pred, cmap='viridis', edgecolor='k')
